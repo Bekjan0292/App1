@@ -2,6 +2,7 @@ import streamlit as st
 import datetime
 import yfinance as yf
 import pandas as pd
+import plotly.express as px
 
 # Set up your web app
 st.set_page_config(layout="wide", page_title="Stock Info WebApp")
@@ -60,6 +61,28 @@ if stock.info:
         st.line_chart(data['Close'])
     else:
         st.error("Failed to fetch historical data.")
+
+    # Fetch and display quarterly financial data
+    st.subheader("Quarterly Financial Data")
+    quarterly_data = stock.quarterly_financials
+    if not quarterly_data.empty:
+        # Transpose and format the quarterly data
+        quarterly_data = quarterly_data.transpose()
+        quarterly_data.reset_index(inplace=True)
+        quarterly_data.columns = ['Quarter'] + list(quarterly_data.columns[1:])  # Rename columns
+
+        # Display quarterly financial data as a table
+        st.write(quarterly_data)
+
+        # Create a bar chart for Revenue and Net Income
+        fig = px.bar(quarterly_data, x='Quarter', y=['Revenue', 'Net Income'], 
+                     title='Quarterly Revenue and Net Income',
+                     labels={'value': 'Amount (in millions)', 'variable': 'Metrics'},
+                     barmode='group')
+        st.plotly_chart(fig)
+    else:
+        st.error("No quarterly financial data available.")
+
 else:
     st.error("Failed to fetch stock information.")
 
