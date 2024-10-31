@@ -32,33 +32,40 @@ if stock is not None:
         st.write(f"### Market Cap: {stock.info.get('marketCap', 'N/A')}")
         st.write(f"### Profitability: {stock.info.get('profitMargins', 'N/A')}")
         
-        # Download historical financials for the last 5 years
-        financials = stock.financials.transpose()  # Quarterly data, transpose for easy handling
-        balance_sheet = stock.balance_sheet.transpose()  # Also quarterly, for equity data
+        # Attempt to retrieve historical financials and balance sheet data
+        financials = stock.financials.transpose() if 'Net Income' in stock.financials else None
+        balance_sheet = stock.balance_sheet.transpose() if 'Total Stockholder Equity' in stock.balance_sheet else None
         
-        # Extract net income and total equity for the last 5 years
-        net_income = financials["Net Income"].tail(5)
-        total_equity = balance_sheet["Total Stockholder Equity"].tail(5)
-        
-        # Calculate ROE (Net Income / Total Equity)
-        roe = net_income / total_equity
-        
-        # Plot ROE and Profitability over the past 5 years
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=net_income.index, y=roe, mode='lines+markers', name="ROE"))
-        fig.add_trace(go.Scatter(x=net_income.index, y=net_income, mode='lines+markers', name="Net Income (Profitability)"))
-        
-        fig.update_layout(
-            title=f"{symbol} - ROE and Profitability (Last 5 Years)",
-            xaxis_title="Year",
-            yaxis_title="Value (in USD)",
-            yaxis2=dict(title="ROE", overlaying='y', side='right'),
-            legend=dict(x=0, y=1, bgcolor='rgba(0,0,0,0)')
-        )
-        st.plotly_chart(fig)
+        if financials is not None and balance_sheet is not None:
+            # Extract net income and total equity for the last 5 years
+            net_income = financials["Net Income"].tail(5)
+            total_equity = balance_sheet["Total Stockholder Equity"].tail(5)
+            
+            # Check if both series are non-empty and align
+            if not net_income.empty and not total_equity.empty and len(net_income) == len(total_equity):
+                # Calculate ROE (Net Income / Total Equity)
+                roe = net_income / total_equity
 
+                # Plot ROE and Profitability over the past 5 years
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=net_income.index, y=roe, mode='lines+markers', name="ROE"))
+                fig.add_trace(go.Scatter(x=net_income.index, y=net_income, mode='lines+markers', name="Net Income (Profitability)"))
+                
+                fig.update_layout(
+                    title=f"{symbol} - ROE and Profitability (Last 5 Years)",
+                    xaxis_title="Year",
+                    yaxis_title="Net Income (USD)",
+                    yaxis2=dict(title="ROE", overlaying='y', side='right'),
+                    legend=dict(x=0, y=1, bgcolor='rgba(0,0,0,0)')
+                )
+                st.plotly_chart(fig)
+            else:
+                st.warning("Insufficient data to calculate ROE or profitability over the last 5 years.")
+        else:
+            st.warning("Net Income or Total Stockholder Equity data is not available for the past 5 years.")
+    
     except Exception as e:
-        st.error("Error fetching company information or calculating ROE and profitability.")
+        st.error(f"Error fetching company information or calculating ROE and profitability: {e}")
 else:
     st.error("Failed to fetch company information.")
 
