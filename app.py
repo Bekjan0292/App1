@@ -3,6 +3,8 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import datetime
 import plotly.graph_objs as go
+import mplfinance as mpf
+import pandas as pd
 
 import appdirs as ad
 ad.user_cache_dir = lambda *args: "/tmp"
@@ -10,7 +12,7 @@ import yfinance as yf
 
 # Specify title and logo for the webpage.
 # Set up your web app
-st.set_page_config(layout="wide", page_title="WebApp_Demo")
+st.set_page_config(layout="wide", page_title="Risk&Return")
 
 # Sidebar
 st.sidebar.title("Input Ticker")
