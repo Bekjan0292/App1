@@ -1,3 +1,4 @@
+%%writefile app.py
 import streamlit as st
 import datetime
 import yfinance as yf
@@ -6,36 +7,6 @@ import plotly.express as px
 
 # Set up your web app
 st.set_page_config(layout="wide", page_title="Stock Info WebApp")
-
-# Custom CSS for styling
-st.markdown(
-    """
-    <style>
-    .header {
-        font-size: 2.5em;
-        font-weight: bold;
-        margin: 10px 0;
-        color: #202124;
-    }
-    .card {
-        padding: 20px;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        background-color: #f9f9f9;
-        margin-bottom: 20px;
-    }
-    .metric {
-        font-size: 1.25em;
-        font-weight: bold;
-        color: #555;
-    }
-    .value {
-        font-size: 1.5em;
-        color: #202124;
-    }
-    </style>
-    """, unsafe_allow_html=True
-)
 
 # Sidebar for stock input
 st.sidebar.title("Input Ticker")
@@ -64,7 +35,7 @@ metrics_options = {
 selected_metrics = st.sidebar.multiselect("Choose metrics to display:", list(metrics_options.keys()), default=list(metrics_options.keys()))
 
 # Display the symbol title
-st.markdown(f"<div class='header'>{symbol} Stock Information</div>", unsafe_allow_html=True)
+st.title(f"{symbol} Stock Information")
 
 # Fetch the stock data
 stock = yf.Ticker(symbol)
@@ -79,13 +50,9 @@ if stock.info:
     # Create a DataFrame for selected stock information
     stock_data = {metric: stock.info.get(metrics_options[metric], 'N/A') for metric in selected_metrics}
 
-    # Create a card for stock information
-    with st.container():
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.write("### Stock Metrics")
-        for metric, value in stock_data.items():
-            st.markdown(f"<div class='metric'>{metric}</div><div class='value'>{value}</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+    # Create a DataFrame and display it
+    df = pd.DataFrame(stock_data.items(), columns=['Metric', 'Value'])
+    st.table(df)
 
     # Download historical data for the specified date range
     data = yf.download(symbol, start=sdate, end=edate)
