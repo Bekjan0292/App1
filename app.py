@@ -2,7 +2,6 @@ import streamlit as st
 import datetime
 import yfinance as yf
 import pandas as pd
-import plotly.graph_objs as go
 
 # Set up your web app
 st.set_page_config(layout="wide", page_title="Stock Info WebApp")
@@ -59,20 +58,6 @@ if stock.info:
         # Display closing price line chart
         st.subheader("Stock Price Over Time")
         st.line_chart(data['Close'])
-
-        # Create a candlestick chart for more detailed information
-        fig = go.Figure(data=[go.Candlestick(x=data.index,
-                                              open=data['Open'],
-                                              high=data['High'],
-                                              low=data['Low'],
-                                              close=data['Close'])])
-        fig.update_layout(title=f'{symbol} Candlestick Chart', xaxis_title='Date', yaxis_title='Price (USD)')
-        st.plotly_chart(fig)
-
-        # Display additional metrics
-        st.subheader("Additional Metrics")
-        st.write(f"**Volume:** {data['Volume'].sum()} over the selected period")
-        st.write(f"**Average Closing Price:** ${data['Close'].mean():.2f}")
     else:
         st.error("Failed to fetch historical data.")
 else:
