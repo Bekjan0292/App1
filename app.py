@@ -7,7 +7,7 @@ import plotly.graph_objs as go
 # Set up your web app
 st.set_page_config(layout="wide", page_title="Stock Info WebApp")
 
-# Sidebar
+# Sidebar for stock input
 st.sidebar.title("Input Ticker")
 symbol = st.sidebar.text_input('Please enter the stock symbol:', 'NVDA').upper()
 
@@ -17,6 +17,21 @@ with col1:
     sdate = st.date_input('Start Date', value=datetime.date(2024, 1, 1))
 with col2:
     edate = st.date_input('End Date', value=datetime.date.today())
+
+# Sidebar options for metrics selection
+st.sidebar.header("Select Metrics")
+metrics_options = {
+    "Previous Close": "previousClose",
+    "Open": "open",
+    "Day Range": "dayRange",
+    "Year Range": "yearRange",
+    "Market Cap": "marketCap",
+    "Avg Volume": "averageVolume",
+    "P/E Ratio": "trailingPE",
+    "Dividend Yield": "dividendYield",
+    "Primary Exchange": "primaryExchange"
+}
+selected_metrics = st.sidebar.multiselect("Choose metrics to display:", list(metrics_options.keys()), default=list(metrics_options.keys()))
 
 # Display the symbol title
 st.title(f"{symbol} Stock Information")
@@ -30,35 +45,12 @@ if stock.info:
     st.subheader("Company Overview")
     st.write(f"**Sector:** {stock.info.get('sector', 'N/A')}")
     st.write(f"**Company Beta:** {stock.info.get('beta', 'N/A')}")
-    
-    # Create a DataFrame for stock information
-    stock_data = {
-        "Metric": [
-            "Previous Close",
-            "Open",
-            "Day Range",
-            "Year Range",
-            "Market Cap",
-            "Avg Volume",
-            "P/E Ratio",
-            "Dividend Yield",
-            "Primary Exchange"
-        ],
-        "Value": [
-            f"${stock.info.get('previousClose', 'N/A')}",
-            f"${stock.info.get('open', 'N/A')}",
-            f"${stock.info.get('dayLow', 'N/A')} - ${stock.info.get('dayHigh', 'N/A')}",
-            f"${stock.info.get('fiftyTwoWeekLow', 'N/A')} - ${stock.info.get('fiftyTwoWeekHigh', 'N/A')}",
-            f"{stock.info.get('marketCap', 'N/A')} USD",
-            f"{stock.info.get('averageVolume', 'N/A')}",
-            f"{stock.info.get('trailingPE', 'N/A')}",
-            f"{stock.info.get('dividendYield', 'N/A')}",
-            stock.info.get('primaryExchange', 'N/A')
-        ]
-    }
-    
+
+    # Create a DataFrame for selected stock information
+    stock_data = {metric: stock.info.get(metrics_options[metric], 'N/A') for metric in selected_metrics}
+
     # Create a DataFrame and display it
-    df = pd.DataFrame(stock_data)
+    df = pd.DataFrame(stock_data.items(), columns=['Metric', 'Value'])
     st.table(df)
 
     # Download historical data for the specified date range
