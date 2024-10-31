@@ -1,4 +1,3 @@
-%%writefile app.py
 import streamlit as st
 import datetime
 import plotly.graph_objs as go
