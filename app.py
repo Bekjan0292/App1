@@ -1,5 +1,4 @@
 import streamlit as st
-import matplotlib.pyplot as plt
 import datetime
 import plotly.graph_objs as go
 import yfinance as yf
@@ -33,19 +32,33 @@ if stock is not None:
         st.write(f"### Market Cap: {stock.info.get('marketCap', 'N/A')}")
         st.write(f"### Profitability: {stock.info.get('profitMargins', 'N/A')}")
         
-        # Retrieve ROE if available
-        roe = stock.info.get('returnOnEquity')
-        if roe is not None:
-            st.write(f"### Return on Equity (ROE): {roe}")
-            # Plot ROE (for simplicity, using a static plot)
-            fig, ax = plt.subplots()
-            ax.bar(['ROE'], [roe], color='skyblue')
-            ax.set_ylabel("Return on Equity")
-            st.pyplot(fig)
-        else:
-            st.write("Return on Equity (ROE) data is not available.")
+        # Download historical financials for the last 5 years
+        financials = stock.financials.transpose()  # Quarterly data, transpose for easy handling
+        balance_sheet = stock.balance_sheet.transpose()  # Also quarterly, for equity data
+        
+        # Extract net income and total equity for the last 5 years
+        net_income = financials["Net Income"].tail(5)
+        total_equity = balance_sheet["Total Stockholder Equity"].tail(5)
+        
+        # Calculate ROE (Net Income / Total Equity)
+        roe = net_income / total_equity
+        
+        # Plot ROE and Profitability over the past 5 years
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=net_income.index, y=roe, mode='lines+markers', name="ROE"))
+        fig.add_trace(go.Scatter(x=net_income.index, y=net_income, mode='lines+markers', name="Net Income (Profitability)"))
+        
+        fig.update_layout(
+            title=f"{symbol} - ROE and Profitability (Last 5 Years)",
+            xaxis_title="Year",
+            yaxis_title="Value (in USD)",
+            yaxis2=dict(title="ROE", overlaying='y', side='right'),
+            legend=dict(x=0, y=1, bgcolor='rgba(0,0,0,0)')
+        )
+        st.plotly_chart(fig)
+
     except Exception as e:
-        st.error("Error fetching company information.")
+        st.error("Error fetching company information or calculating ROE and profitability.")
 else:
     st.error("Failed to fetch company information.")
 
