@@ -22,7 +22,6 @@ st.title(f"{symbol}")
 # Fetch stock data and display additional financial information
 stock = yf.Ticker(symbol)
 if stock is not None:
-    try:
         # Display company's basic information
         st.write(f"### Sector: {stock.info.get('sector', 'N/A')}")
         st.write(f"### Company Beta: {stock.info.get('beta', 'N/A')}")
