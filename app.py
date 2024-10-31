@@ -1,7 +1,9 @@
+%%writefile app.py
 import streamlit as st
 import datetime
 import plotly.graph_objs as go
 import yfinance as yf
+import pandas as pd
 
 # Set up web app configuration
 st.set_page_config(layout="wide", page_title="Stock Analysis WebApp")
@@ -20,7 +22,7 @@ st.title(f"{symbol}")
 # Fetch stock data
 stock = yf.Ticker(symbol)
 try:
-    # Profitability Metrics
+    # Profitability Metrics (Monthly Snapshot)
     sector = stock.info.get('sector', 'N/A')
     beta = stock.info.get('beta', 'N/A')
     pe_ratio = stock.info.get('trailingPE', None)
@@ -30,22 +32,30 @@ try:
     st.write(f"**Sector:** {sector}")
     st.write(f"**Beta:** {beta}")
 
-    # Profitability Chart
-    if pe_ratio and pb_ratio and roe is not None:
+    # MTD Data Calculation
+    data = yf.download(symbol, start=sdate, end=edate, interval="1d")
+    current_month = datetime.date.today().month
+    current_year = datetime.date.today().year
+    data_mtd = data[(data.index.month == current_month) & (data.index.year == current_year)]
+    
+    if not data_mtd.empty:
+        avg_close_mtd = data_mtd['Close'].mean()
         profitability_data = {
-            'P/E Ratio': pe_ratio,
-            'P/B Ratio': pb_ratio,
-            'ROE (%)': roe * 100  # Convert ROE to percentage
+            'Avg Close (MTD)': avg_close_mtd,
+            'P/E Ratio': pe_ratio if pe_ratio else 0,
+            'P/B Ratio': pb_ratio if pb_ratio else 0,
+            'ROE (%)': roe * 100 if roe else 0  # Convert ROE to percentage if available
         }
-        
+
+        # Plot profitability metrics as a bar chart
         fig_profitability = go.Figure([go.Bar(
             x=list(profitability_data.keys()),
             y=list(profitability_data.values()),
-            marker_color=['blue', 'orange', 'green']
+            marker_color=['blue', 'orange', 'green', 'purple']
         )])
         
         fig_profitability.update_layout(
-            title=f"{symbol} Profitability Metrics",
+            title=f"{symbol} MTD Profitability Metrics",
             xaxis_title="Metrics",
             yaxis_title="Value",
             height=400
@@ -53,12 +63,9 @@ try:
         
         st.plotly_chart(fig_profitability)
     else:
-        st.write("Profitability data is unavailable for this stock.")
+        st.write("No MTD data available for this stock.")
 except KeyError:
     st.error("Failed to retrieve company financial data.")
-
-# Fetch historical stock price data
-data = yf.download(symbol, start=sdate, end=edate)
 
 # Display Japanese Candlestick Chart
 if not data.empty:
