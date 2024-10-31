@@ -1,8 +1,5 @@
 streamlit
 datetime
-matplotlib
-appdirs
-yfinance
-plotly
-mplfinance
+plotly.graph_objs
 pandas
+yfinance
