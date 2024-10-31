@@ -1,39 +1,57 @@
 import streamlit as st
-import streamlit as st
 import matplotlib.pyplot as plt
 import datetime
 import plotly.graph_objs as go
-
-import appdirs as ad
-ad.user_cache_dir = lambda *args: "/tmp"
 import yfinance as yf
 
-# Specify title and logo for the webpage.
-# Set up your web app
-st.set_page_config(layout="wide", page_title="WebApp_Demo")
+# Set the page configuration for the web app.
+st.set_page_config(layout="wide", page_title="WebApp_Demo", page_icon="📈")
 
-# Sidebar
+# Sidebar for input
 st.sidebar.title("Input Ticker")
-symbol = st.sidebar.text_input('Please enter the stock symbol: ', 'NVDA').upper()
-# Selection for a specific time frame.
+symbol = st.sidebar.text_input('Please enter the stock symbol:', 'NVDA').upper()
 col1, col2 = st.sidebar.columns(2, gap="medium")
 with col1:
-    sdate = st.date_input('Start Date',value=datetime.date(2024,1,1))
+    sdate = st.date_input('Start Date', value=datetime.date(2024, 1, 1))
 with col2:
-    edate = st.date_input('End Date',value=datetime.date.today())
+    edate = st.date_input('End Date', value=datetime.date.today())
 
+# Display title
 st.title(f"{symbol}")
 
+# Fetch stock data and display additional financial information
 stock = yf.Ticker(symbol)
 if stock is not None:
-  # Display company's basics
-  st.write(f"# Sector : {stock.info['sector']}")
-  st.write(f"# Company Beta : {stock.info['beta']}")
+    try:
+        # Display company's basic information
+        st.write(f"### Sector: {stock.info.get('sector', 'N/A')}")
+        st.write(f"### Company Beta: {stock.info.get('beta', 'N/A')}")
+        
+        # Additional financial metrics
+        st.write(f"### P/E Ratio: {stock.info.get('forwardPE', 'N/A')}")
+        st.write(f"### P/B Ratio: {stock.info.get('priceToBook', 'N/A')}")
+        st.write(f"### Market Cap: {stock.info.get('marketCap', 'N/A')}")
+        st.write(f"### Profitability: {stock.info.get('profitMargins', 'N/A')}")
+        
+        # Retrieve ROE if available
+        roe = stock.info.get('returnOnEquity')
+        if roe is not None:
+            st.write(f"### Return on Equity (ROE): {roe}")
+            # Plot ROE (for simplicity, using a static plot)
+            fig, ax = plt.subplots()
+            ax.bar(['ROE'], [roe], color='skyblue')
+            ax.set_ylabel("Return on Equity")
+            st.pyplot(fig)
+        else:
+            st.write("Return on Equity (ROE) data is not available.")
+    except Exception as e:
+        st.error("Error fetching company information.")
 else:
-  st.error("Failed to fetch historical data.")
+    st.error("Failed to fetch company information.")
 
-data = yf.download(symbol,start=sdate,end=edate)
+# Download historical data and plot
+data = yf.download(symbol, start=sdate, end=edate)
 if data is not None:
-  st.line_chart(data['Close'],x_label="Date",y_label="Close, USD")
+    st.line_chart(data['Close'], x_label="Date", y_label="Close, USD")
 else:
     st.error("Failed to fetch historical data.")
