@@ -1,86 +1,55 @@
 import streamlit as st
 import datetime
+import plotly.graph_objs as go
 import yfinance as yf
-import matplotlib.pyplot as plt
 
 # Set up your web app
-st.set_page_config(layout="wide", page_title="WebApp_Demo")
+st.set_page_config(layout="wide", page_title="Stock Dashboard", page_icon="📈")
 
-# Sidebar for ticker symbol input
+# Sidebar
 st.sidebar.title("Input Ticker")
-symbol = st.sidebar.text_input('Please enter the stock symbol: ', 'TSLA').upper()
+symbol = st.sidebar.text_input('Please enter the stock symbol:', 'TSLA').upper()
 
-# Sidebar for date selection
+# Date selection
 col1, col2 = st.sidebar.columns(2, gap="medium")
 with col1:
-    sdate = st.date_input('Start Date', value=datetime.date(2014, 1, 1))
+    sdate = st.date_input('Start Date', value=datetime.date(2024, 1, 1))
 with col2:
     edate = st.date_input('End Date', value=datetime.date.today())
 
-st.title(f"{symbol}")
-
-# Fetch stock data
-stock = yf.Ticker(symbol)
-
-# Display company information and financial ratios
-try:
-    st.write(f"# Sector: {stock.info['sector']}")
-    st.write(f"# Company Beta: {stock.info['beta']}")
-    st.sidebar.write(f"**P/E Ratio:** {stock.info['trailingPE']}")
-    st.sidebar.write(f"**P/B Ratio:** {stock.info['priceToBook']}")
-    st.sidebar.write(f"**Market Cap:** {stock.info['marketCap'] / 1e9:.2f} Billion USD")
-except KeyError:
-    st.error("Failed to fetch company information. Please check the ticker symbol.")
-
-# Download historical data for the last 10 years
-data = yf.download(symbol, start=sdate, end=edate)
-
-# Plot closing prices
-if not data.empty:
-    st.line_chart(data['Close'], x_label="Date", y_label="Close, USD")
+# Validate date input
+if edate < sdate:
+    st.error("End date must be after the start date.")
 else:
-    st.error("Failed to fetch historical data.")
+    st.title(f"{symbol} Stock Overview")
 
-# Fetch and display profits for the last 10 years
-try:
-    financials = stock.financials
-    profits = financials.loc['Gross Profit']  # Fetch Gross Profit
-    profits_years = profits.index.tolist()
+    with st.spinner('Fetching data...'):
+        stock = yf.Ticker(symbol)
 
-    # Create a bar chart for profits
-    plt.figure(figsize=(10, 5))
-    plt.bar(profits_years, profits.values, color='royalblue')
-    plt.title('Gross Profit Over the Years')
-    plt.xlabel('Year')
-    plt.ylabel('Gross Profit (USD)')
-    plt.xticks(rotation=45)
-    st.pyplot(plt)
-except Exception as e:
-    st.error(f"Failed to fetch financial data: {str(e)}")
+        # Display company basics
+        if stock.info:
+            st.markdown(f"### Sector: **{stock.info.get('sector', 'N/A')}**")
+            st.markdown(f"### Company Beta: **{stock.info.get('beta', 'N/A')}**")
+            st.markdown(f"### Market Cap: **${stock.info.get('marketCap', 'N/A')}**")
+            st.markdown(f"### Current Price: **${stock.info.get('currentPrice', 'N/A')}**")
+        else:
+            st.error("Failed to fetch stock information.")
 
-# Display detailed financial information like Google Finance
-st.header("Key Financials")
+        data = yf.download(symbol, start=sdate, end=edate)
 
-# Get balance sheet, income statement, and cash flow statement
-try:
-    balance_sheet = stock.balance_sheet
-    income_statement = stock.financials
-    cash_flow = stock.cashflow
+        if not data.empty:
+            # Create an interactive plot using Plotly
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=data.index, y=data['Close'], mode='lines', name='Close Price', line=dict(color='royalblue')))
+            fig.update_layout(title=f'{symbol} Closing Prices',
+                              xaxis_title='Date',
+                              yaxis_title='Close Price (USD)',
+                              template='plotly_white',
+                              margin=dict(l=40, r=40, t=40, b=40))
+            st.plotly_chart(fig)
 
-    # Displaying Income Statement
-    st.subheader("Income Statement")
-    income_statement = income_statement.T  # Transpose for better readability
-    st.dataframe(income_statement)
-
-    # Displaying Balance Sheet
-    st.subheader("Balance Sheet")
-    balance_sheet = balance_sheet.T  # Transpose for better readability
-    st.dataframe(balance_sheet)
-
-    # Displaying Cash Flow Statement
-    st.subheader("Cash Flow Statement")
-    cash_flow = cash_flow.T  # Transpose for better readability
-    st.dataframe(cash_flow)
-
-except Exception as e:
-    st.error(f"Failed to fetch financial statements: {str(e)}")
+            # Display additional stock information (e.g., volume)
+            st.markdown("### Additional Information")
+            st.write(data[['Open', 'High', 'Low', 'Close', 'Volume']].tail())  # Show the last few rows of data
+        else:
+            st.error("Failed to fetch historical data.")
