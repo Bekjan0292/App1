@@ -31,13 +31,19 @@ if stock is not None:
         st.write(f"### P/B Ratio: {stock.info.get('priceToBook', 'N/A')}")
         st.write(f"### Market Cap: {stock.info.get('marketCap', 'N/A')}")
         st.write(f"### Profitability: {stock.info.get('profitMargins', 'N/A')}")
-        
-        # Attempt to retrieve historical financials and balance sheet data
+
+        # Attempt to retrieve annual financials and balance sheet data for more consistent data
         financials = stock.financials.transpose() if 'Net Income' in stock.financials else None
         balance_sheet = stock.balance_sheet.transpose() if 'Total Stockholder Equity' in stock.balance_sheet else None
-        
+
+        # Display the raw data to see what is available
+        st.write("### Available Financial Data")
+        st.write(financials if financials is not None else "Financial data not available.")
+        st.write("### Available Balance Sheet Data")
+        st.write(balance_sheet if balance_sheet is not None else "Balance sheet data not available.")
+
         if financials is not None and balance_sheet is not None:
-            # Extract net income and total equity for the last 5 years
+            # Extract net income and total equity for the last 5 years (annual data preferred)
             net_income = financials["Net Income"].tail(5)
             total_equity = balance_sheet["Total Stockholder Equity"].tail(5)
             
