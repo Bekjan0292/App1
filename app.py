@@ -1,5 +1,4 @@
 import streamlit as st
-import matplotlib.pyplot as plt
 import datetime
 import plotly.graph_objs as go
 import yfinance as yf
@@ -21,23 +20,49 @@ st.title(f"{symbol}")
 # Fetch stock data
 stock = yf.Ticker(symbol)
 try:
-    st.write(f"**Sector:** {stock.info.get('sector', 'N/A')}")
-    st.write(f"**Beta:** {stock.info.get('beta', 'N/A')}")
-    st.write(f"**P/E Ratio:** {stock.info.get('trailingPE', 'N/A')}")
-    st.write(f"**P/B Ratio:** {stock.info.get('priceToBook', 'N/A')}")
-    st.write(f"**Return on Equity (ROE):** {stock.info.get('returnOnEquity', 'N/A') * 100:.2f}%")
+    # Profitability Metrics
+    sector = stock.info.get('sector', 'N/A')
+    beta = stock.info.get('beta', 'N/A')
+    pe_ratio = stock.info.get('trailingPE', None)
+    pb_ratio = stock.info.get('priceToBook', None)
+    roe = stock.info.get('returnOnEquity', None)
+    
+    st.write(f"**Sector:** {sector}")
+    st.write(f"**Beta:** {beta}")
+
+    # Profitability Chart
+    if pe_ratio and pb_ratio and roe is not None:
+        profitability_data = {
+            'P/E Ratio': pe_ratio,
+            'P/B Ratio': pb_ratio,
+            'ROE (%)': roe * 100  # Convert ROE to percentage
+        }
+        
+        fig_profitability = go.Figure([go.Bar(
+            x=list(profitability_data.keys()),
+            y=list(profitability_data.values()),
+            marker_color=['blue', 'orange', 'green']
+        )])
+        
+        fig_profitability.update_layout(
+            title=f"{symbol} Profitability Metrics",
+            xaxis_title="Metrics",
+            yaxis_title="Value",
+            height=400
+        )
+        
+        st.plotly_chart(fig_profitability)
+    else:
+        st.write("Profitability data is unavailable for this stock.")
 except KeyError:
     st.error("Failed to retrieve company financial data.")
 
 # Fetch historical stock price data
 data = yf.download(symbol, start=sdate, end=edate)
 
-# Plot Close Price
+# Display Japanese Candlestick Chart
 if not data.empty:
-    st.line_chart(data['Close'], x_label="Date", y_label="Close, USD")
-
-    # Candlestick Chart
-    fig = go.Figure(data=[go.Candlestick(
+    fig_candlestick = go.Figure(data=[go.Candlestick(
         x=data.index,
         open=data['Open'],
         high=data['High'],
@@ -46,12 +71,14 @@ if not data.empty:
         increasing_line_color='green',
         decreasing_line_color='red'
     )])
-    fig.update_layout(title=f"{symbol} Japanese Candlestick Chart", xaxis_title="Date", yaxis_title="Price (USD)")
-    st.plotly_chart(fig)
-
-    # Display Moving Averages
-    data['MA20'] = data['Close'].rolling(window=20).mean()
-    data['MA50'] = data['Close'].rolling(window=50).mean()
-    st.line_chart(data[['Close', 'MA20', 'MA50']])
+    
+    fig_candlestick.update_layout(
+        title=f"{symbol} Japanese Candlestick Chart",
+        xaxis_title="Date",
+        yaxis_title="Price (USD)",
+        height=600
+    )
+    
+    st.plotly_chart(fig_candlestick)
 else:
     st.error("Failed to fetch historical data.")
